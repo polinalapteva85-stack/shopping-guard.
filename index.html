@@ -1,27 +1,67 @@
-async function startAnalysis() {
-    const link = document.getElementById('productLink').value;
-    const responseArea = document.getElementById('aiResponse');
-    const resultArea = document.getElementById('resultArea');
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Guard | Premium AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
+        .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; }
+        h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; }
+        .input-group { background: white; padding: 10px; border-radius: 20px; box-shadow: 0 15px 35px rgba(184,134,11,0.1); margin: 30px 0; border: 1px solid rgba(184,134,11,0.2); }
+        input { width: 100%; border: none; padding: 15px; outline: none; font-size: 16px; background: transparent; }
+        .main-btn { width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        .result-area { margin-top: 30px; display: none; background: white; padding: 20px; border-radius: 20px; text-align: left; border-left: 4px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
 
-    if(!link) return alert("Пожалуйста, вставьте ссылку");
-    
-    resultArea.style.display = 'block';
-    responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю данные с рынком.";
+<div class="app-container">
+    <h1>Shopping Guard</h1>
+    <p style="font-size: 10px; letter-spacing: 3px; color: #888;">AI FINANCIAL CONCIERGE</p>
 
-    try {
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ link: link })
-        });
-        const data = await response.json();
+    <div class="input-group">
+        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
+    </div>
+
+    <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
+
+    <div class="result-area" id="resultArea">
+        <div id="aiResponse"></div>
+    </div>
+</div>
+
+<script>
+    async function startAnalysis() {
+        const link = document.getElementById('productLink').value;
+        const responseArea = document.getElementById('aiResponse');
+        const resultArea = document.getElementById('resultArea');
+
+        if(!link) return alert("Пожалуйста, вставьте ссылку");
         
-        if (data.success) {
-            responseArea.innerHTML = data.text.replace(/\n/g, '<br>');
-        } else {
-            responseArea.innerHTML = "Ошибка: " + data.error;
+        resultArea.style.display = 'block';
+        responseArea.innerHTML = "<b>Анализирую...</b><br>Изучаю ценность данной покупки.";
+
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ link: link })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                responseArea.innerHTML = data.text.replace(/\n/g, '<br>');
+            } else {
+                responseArea.innerHTML = "Ошибка: " + data.error;
+            }
+        } catch (e) {
+            responseArea.innerHTML = "Ошибка связи с сервером.";
         }
-    } catch (e) {
-        responseArea.innerHTML = "Ошибка связи с сервером.";
     }
-}
+</script>
+
+</body>
+</html>
