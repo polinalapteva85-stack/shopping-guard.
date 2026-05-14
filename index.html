@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1A1A1A">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Guard | Premium AI</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1A1A1A">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        /* Основные настройки дизайна */
         :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
         .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; }
@@ -53,7 +52,6 @@
         
         .main-btn:hover { background: #333; }
 
-        /* СТИЛИ ДЛЯ ОТВЕТА (ТО, ЧТО ТЫ СПРАШИВАЛА) */
         .result-area { 
             margin-top: 30px; 
             display: none; 
@@ -69,7 +67,6 @@
         #aiResponse {
             font-size: 15px;
             color: #333;
-            /* Анимация появления */
             animation: fadeIn 0.8s ease-in;
         }
 
@@ -78,7 +75,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Красивое выделение жирного текста от ИИ */
         #aiResponse b { 
             color: var(--accent); 
             font-family: 'Playfair Display', serif; 
@@ -92,7 +88,7 @@
 
 <div class="app-container">
     <h1>Shopping Guard</h1>
-    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">AI FINANCIAL CONCIERGE</p>
+    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">AI FINANCIAL CONCIERGE 2026</p>
 
     <div class="input-group">
         <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
@@ -108,6 +104,21 @@
 </div>
 
 <script>
+    // Регистрируем Service Worker для работы приложения
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+
+    // Слушаем, если в приложение "поделились" ссылкой извне
+    window.addEventListener('DOMContentLoaded', () => {
+        const parsedUrl = new URL(window.location);
+        const sharedUrl = parsedUrl.searchParams.get('url') || parsedUrl.searchParams.get('text');
+        if (sharedUrl) {
+            document.getElementById('productLink').value = sharedUrl;
+            startAnalysis();
+        }
+    });
+
     async function startAnalysis() {
         const link = document.getElementById('productLink').value;
         const name = document.getElementById('productName').value;
@@ -117,7 +128,7 @@
         if(!link && !name) return alert("Пожалуйста, введите данные");
         
         resultArea.style.display = 'block';
-        responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с финансовыми целями.";
+        responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с финансовыми целями 2026.";
 
         try {
             const response = await fetch('/api/analyze', {
@@ -130,10 +141,9 @@
             const data = await response.json();
             
             if (data.success) {
-                // Превращаем текст от ИИ в красивый HTML (жирный шрифт и переносы)
                 let formattedText = data.text
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Делаем текст между ** жирным
-                    .replace(/\n/g, '<br>'); // Делаем переносы строк
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                    .replace(/\n/g, '<br>');
                 
                 responseArea.innerHTML = formattedText;
             } else {
@@ -145,9 +155,5 @@
     }
 </script>
 
- if ('serviceWorker' in navigator) {
-   navigator.serviceWorker.register('/sw.js');
- }
-</script>
 </body>
 </html>
