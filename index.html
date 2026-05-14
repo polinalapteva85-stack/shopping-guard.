@@ -8,80 +8,47 @@
     <meta name="theme-color" content="#1A1A1A">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; }
+        :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; --risk-color: #B8860B; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
         .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; }
         h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; margin-top: 50px; }
         
+        /* Стили ввода */
         .input-group { 
-            background: white; 
-            padding: 10px; 
-            border-radius: 20px; 
-            box-shadow: 0 15px 35px rgba(184,134,11,0.1); 
-            margin: 30px 0; 
-            border: 1px solid rgba(184,134,11,0.2); 
+            background: white; padding: 10px; border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(184,134,11,0.1); margin: 30px 0; border: 1px solid rgba(184,134,11,0.2); 
             text-align: left;
         }
-        
-        input { 
-            width: 100%; 
-            border: none; 
-            padding: 15px; 
-            outline: none; 
-            font-size: 15px; 
-            background: transparent; 
-            font-family: 'Inter', sans-serif;
-            box-sizing: border-box;
-        }
-
+        input { width: 100%; border: none; padding: 15px; outline: none; font-size: 15px; background: transparent; font-family: 'Inter', sans-serif; box-sizing: border-box; }
         .divider { border: 0; border-top: 1px solid #eee; margin: 5px 15px; }
 
         .main-btn { 
-            width: 100%; 
-            background: #1A1A1A; 
-            color: white; 
-            border: none; 
-            padding: 20px; 
-            border-radius: 18px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            transition: 0.3s;
+            width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; 
+            font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
         }
-        
         .main-btn:hover { background: #333; }
 
+        /* НОВОЕ: ШКАЛА РИСКА */
+        .risk-gauge {
+            width: 100%; height: 8px; background: #eee; border-radius: 10px; margin: 25px 0 10px 0;
+            overflow: hidden; display: none;
+        }
+        .risk-fill {
+            height: 100%; width: 0%; background: var(--risk-color); transition: width 1.5s ease-in-out, background 0.5s;
+        }
+        .risk-label { 
+            font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; 
+            margin-bottom: 5px; display: none; color: var(--risk-color); text-align: left;
+        }
+
+        /* Область результата */
         .result-area { 
-            margin-top: 30px; 
-            display: none; 
-            background: white; 
-            padding: 25px; 
-            border-radius: 20px; 
-            text-align: left; 
-            border-left: 4px solid var(--accent); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-            line-height: 1.6; 
+            margin-top: 20px; display: none; background: white; padding: 25px; border-radius: 20px; 
+            text-align: left; border-left: 4px solid var(--risk-color); box-shadow: 0 10px 30px rgba(0,0,0,0.05); line-height: 1.6; 
         }
-
-        #aiResponse {
-            font-size: 15px;
-            color: #333;
-            animation: fadeIn 0.8s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        #aiResponse b { 
-            color: var(--accent); 
-            font-family: 'Playfair Display', serif; 
-            display: block; 
-            margin-top: 15px; 
-            font-size: 17px;
-        }
+        #aiResponse { font-size: 15px; color: #333; animation: fadeIn 0.8s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #aiResponse b { color: var(--accent); font-family: 'Playfair Display', serif; display: block; margin-top: 15px; font-size: 17px; }
     </style>
 </head>
 <body>
@@ -98,18 +65,23 @@
 
     <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
 
+    <div id="riskLabel" class="risk-label">Уровень импульсивного риска</div>
+    <div id="riskGauge" class="risk-gauge">
+        <div id="riskFill" class="risk-fill"></div>
+    </div>
+
     <div class="result-area" id="resultArea">
         <div id="aiResponse"></div>
     </div>
 </div>
 
 <script>
-    // Регистрируем Service Worker для работы приложения
+    // 1. РЕГИСТРАЦИЯ SERVICE WORKER (Чтобы работало как приложение)
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js');
     }
 
-    // Слушаем, если в приложение "поделились" ссылкой извне
+    // 2. ЛОГИКА SHARE TARGET (Ловим ссылку, если "поделились" из другого приложения)
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
         const sharedUrl = parsedUrl.searchParams.get('url') || parsedUrl.searchParams.get('text');
@@ -119,16 +91,24 @@
         }
     });
 
+    // 3. ОСНОВНАЯ ФУНКЦИЯ АНАЛИЗА
     async function startAnalysis() {
         const link = document.getElementById('productLink').value;
         const name = document.getElementById('productName').value;
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
+        const gauge = document.getElementById('riskGauge');
+        const fill = document.getElementById('riskFill');
+        const label = document.getElementById('riskLabel');
 
         if(!link && !name) return alert("Пожалуйста, введите данные");
         
+        // Сброс интерфейса перед новым анализом
         resultArea.style.display = 'block';
-        responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с финансовыми целями 2026.";
+        gauge.style.display = 'none';
+        label.style.display = 'none';
+        fill.style.width = '0%';
+        responseArea.innerHTML = "<b>Анализирую...</b><br>Neural Engine 2026 изучает рыночные данные.";
 
         try {
             const response = await fetch('/api/analyze', {
@@ -141,7 +121,29 @@
             const data = await response.json();
             
             if (data.success) {
-                let formattedText = data.text
+                // Извлекаем балл риска из текста [SCORE: X]
+                const scoreMatch = data.text.match(/\[SCORE:\s*(\d+)\]/);
+                const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+                
+                // Очищаем текст от технической метки балла
+                const cleanText = data.text.replace(/\[SCORE:\s*\d+\]/g, '');
+
+                // Показываем шкалу
+                gauge.style.display = 'block';
+                label.style.display = 'block';
+                
+                // Настройка цвета в зависимости от риска
+                let color = '#B8860B'; // Золото (безопасно)
+                if (score > 30) color = '#E67E22'; // Оранжевый (внимание)
+                if (score > 70) color = '#C0392B'; // Красный (опасно)
+                
+                document.documentElement.style.setProperty('--risk-color', color);
+                
+                // Анимируем шкалу
+                setTimeout(() => { fill.style.width = score + '%'; }, 100);
+
+                // Форматируем текст
+                let formattedText = cleanText
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                     .replace(/\n/g, '<br>');
                 
@@ -150,7 +152,7 @@
                 responseArea.innerHTML = "Ошибка: " + data.error;
             }
         } catch (e) {
-            responseArea.innerHTML = "Ошибка связи с сервером.";
+            responseArea.innerHTML = "Ошибка связи с сервером. Проверьте соединение.";
         }
     }
 </script>
