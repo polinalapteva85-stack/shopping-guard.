@@ -1,1 +1,27 @@
+async function startAnalysis() {
+    const link = document.getElementById('productLink').value;
+    const responseArea = document.getElementById('aiResponse');
+    const resultArea = document.getElementById('resultArea');
 
+    if(!link) return alert("Пожалуйста, вставьте ссылку");
+    
+    resultArea.style.display = 'block';
+    responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю данные с рынком.";
+
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ link: link })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            responseArea.innerHTML = data.text.replace(/\n/g, '<br>');
+        } else {
+            responseArea.innerHTML = "Ошибка: " + data.error;
+        }
+    } catch (e) {
+        responseArea.innerHTML = "Ошибка связи с сервером.";
+    }
+}
