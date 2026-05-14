@@ -6,12 +6,12 @@
     <title>Shopping Guard | Premium AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        /* Основные настройки дизайна */
         :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
         .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; }
         h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; margin-top: 50px; }
         
-        /* Группа полей ввода */
         .input-group { 
             background: white; 
             padding: 10px; 
@@ -33,11 +33,7 @@
             box-sizing: border-box;
         }
 
-        .divider {
-            border: 0;
-            border-top: 1px solid #eee;
-            margin: 5px 15px;
-        }
+        .divider { border: 0; border-top: 1px solid #eee; margin: 5px 15px; }
 
         .main-btn { 
             width: 100%; 
@@ -55,6 +51,7 @@
         
         .main-btn:hover { background: #333; }
 
+        /* СТИЛИ ДЛЯ ОТВЕТА (ТО, ЧТО ТЫ СПРАШИВАЛА) */
         .result-area { 
             margin-top: 30px; 
             display: none; 
@@ -66,6 +63,27 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
             line-height: 1.6; 
         }
+
+        #aiResponse {
+            font-size: 15px;
+            color: #333;
+            /* Анимация появления */
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Красивое выделение жирного текста от ИИ */
+        #aiResponse b { 
+            color: var(--accent); 
+            font-family: 'Playfair Display', serif; 
+            display: block; 
+            margin-top: 15px; 
+            font-size: 17px;
+        }
     </style>
 </head>
 <body>
@@ -76,10 +94,8 @@
 
     <div class="input-group">
         <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
-        
         <div class="divider"></div>
-        
-        <input type="text" id="productName" placeholder="Что это? (например: Пятновыводитель)">
+        <input type="text" id="productName" placeholder="Что это? (например: Тушь для ресниц)">
     </div>
 
     <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
@@ -96,17 +112,15 @@
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
 
-        // Проверяем, чтобы хоть что-то было заполнено
-        if(!link && !name) return alert("Пожалуйста, вставьте ссылку или напишите название товара");
+        if(!link && !name) return alert("Пожалуйста, введите данные");
         
         resultArea.style.display = 'block';
-        responseArea.innerHTML = "<b>Анализирую...</b><br>Изучаю ценность данной покупки.";
+        responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с финансовыми целями.";
 
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Отправляем и ссылку, и название вместе
                 body: JSON.stringify({ 
                     link: "Товар: " + name + " | Ссылка: " + link 
                 })
@@ -114,13 +128,17 @@
             const data = await response.json();
             
             if (data.success) {
-                // Заменяем переносы строк на тег переноса в HTML
-                responseArea.innerHTML = data.text.replace(/\n/g, '<br>');
+                // Превращаем текст от ИИ в красивый HTML (жирный шрифт и переносы)
+                let formattedText = data.text
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Делаем текст между ** жирным
+                    .replace(/\n/g, '<br>'); // Делаем переносы строк
+                
+                responseArea.innerHTML = formattedText;
             } else {
                 responseArea.innerHTML = "Ошибка: " + data.error;
             }
         } catch (e) {
-            responseArea.innerHTML = "Ошибка связи с сервером. Попробуйте позже.";
+            responseArea.innerHTML = "Ошибка связи с сервером.";
         }
     }
 </script>
