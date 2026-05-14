@@ -10,10 +10,9 @@
     <style>
         :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; --risk-color: #B8860B; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
-        .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; }
+        .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; display: flex; flex-direction: column; }
         h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; margin-top: 50px; }
         
-        /* Стили ввода */
         .input-group { 
             background: white; padding: 10px; border-radius: 20px; 
             box-shadow: 0 15px 35px rgba(184,134,11,0.1); margin: 30px 0; border: 1px solid rgba(184,134,11,0.2); 
@@ -26,9 +25,7 @@
             width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; 
             font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
         }
-        .main-btn:hover { background: #333; }
 
-        /* НОВОЕ: ШКАЛА РИСКА */
         .risk-gauge {
             width: 100%; height: 8px; background: #eee; border-radius: 10px; margin: 25px 0 10px 0;
             overflow: hidden; display: none;
@@ -41,14 +38,23 @@
             margin-bottom: 5px; display: none; color: var(--risk-color); text-align: left;
         }
 
-        /* Область результата */
         .result-area { 
             margin-top: 20px; display: none; background: white; padding: 25px; border-radius: 20px; 
             text-align: left; border-left: 4px solid var(--risk-color); box-shadow: 0 10px 30px rgba(0,0,0,0.05); line-height: 1.6; 
         }
-        #aiResponse { font-size: 15px; color: #333; animation: fadeIn 0.8s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #aiResponse { font-size: 15px; color: #333; }
         #aiResponse b { color: var(--accent); font-family: 'Playfair Display', serif; display: block; margin-top: 15px; font-size: 17px; }
+
+        /* НАШ КОЗЫРЬ - Надпись в футере */
+        .footer-trust {
+            margin-top: auto;
+            padding: 40px 0 20px 0;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: #A0A0A0;
+            text-transform: uppercase;
+        }
+        .footer-trust b { color: var(--accent); font-weight: 600; }
     </style>
 </head>
 <body>
@@ -60,7 +66,7 @@
     <div class="input-group">
         <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
         <div class="divider"></div>
-        <input type="text" id="productName" placeholder="Что это? (например: Тушь для ресниц)">
+        <input type="text" id="productName" placeholder="Что это?">
     </div>
 
     <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
@@ -73,25 +79,22 @@
     <div class="result-area" id="resultArea">
         <div id="aiResponse"></div>
     </div>
+
+    <div class="footer-trust">
+        Powered by <b>Neural Data 2026</b><br>
+        Мы на стороне вашего кошелька
+    </div>
 </div>
 
 <script>
-    // 1. РЕГИСТРАЦИЯ SERVICE WORKER (Чтобы работало как приложение)
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
-    }
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
 
-    // 2. ЛОГИКА SHARE TARGET (Ловим ссылку, если "поделились" из другого приложения)
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
         const sharedUrl = parsedUrl.searchParams.get('url') || parsedUrl.searchParams.get('text');
-        if (sharedUrl) {
-            document.getElementById('productLink').value = sharedUrl;
-            startAnalysis();
-        }
+        if (sharedUrl) { document.getElementById('productLink').value = sharedUrl; startAnalysis(); }
     });
 
-    // 3. ОСНОВНАЯ ФУНКЦИЯ АНАЛИЗА
     async function startAnalysis() {
         const link = document.getElementById('productLink').value;
         const name = document.getElementById('productName').value;
@@ -103,56 +106,41 @@
 
         if(!link && !name) return alert("Пожалуйста, введите данные");
         
-        // Сброс интерфейса перед новым анализом
         resultArea.style.display = 'block';
         gauge.style.display = 'none';
         label.style.display = 'none';
         fill.style.width = '0%';
-        responseArea.innerHTML = "<b>Анализирую...</b><br>Neural Engine 2026 изучает рыночные данные.";
+        responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с базой достоверности 2026.";
 
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    link: "Товар: " + name + " | Ссылка: " + link 
-                })
+                body: JSON.stringify({ link: "Товар: " + name + " | Ссылка: " + link })
             });
             const data = await response.json();
             
             if (data.success) {
-                // Извлекаем балл риска из текста [SCORE: X]
                 const scoreMatch = data.text.match(/\[SCORE:\s*(\d+)\]/);
                 const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
-                
-                // Очищаем текст от технической метки балла
                 const cleanText = data.text.replace(/\[SCORE:\s*\d+\]/g, '');
 
-                // Показываем шкалу
                 gauge.style.display = 'block';
                 label.style.display = 'block';
                 
-                // Настройка цвета в зависимости от риска
-                let color = '#B8860B'; // Золото (безопасно)
-                if (score > 30) color = '#E67E22'; // Оранжевый (внимание)
-                if (score > 70) color = '#C0392B'; // Красный (опасно)
+                let color = '#B8860B'; 
+                if (score > 30) color = '#E67E22'; 
+                if (score > 70) color = '#C0392B'; 
                 
                 document.documentElement.style.setProperty('--risk-color', color);
-                
-                // Анимируем шкалу
                 setTimeout(() => { fill.style.width = score + '%'; }, 100);
 
-                // Форматируем текст
-                let formattedText = cleanText
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                    .replace(/\n/g, '<br>');
-                
-                responseArea.innerHTML = formattedText;
+                responseArea.innerHTML = cleanText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             } else {
                 responseArea.innerHTML = "Ошибка: " + data.error;
             }
         } catch (e) {
-            responseArea.innerHTML = "Ошибка связи с сервером. Проверьте соединение.";
+            responseArea.innerHTML = "Ошибка связи с сервером.";
         }
     }
 </script>
