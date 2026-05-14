@@ -4,12 +4,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { link } = req.body;
-    // Берем ключ строго из системных переменных Vercel
     const apiKey = process.env.OPENAI_API_KEY;
-
-    if (!apiKey) {
-        return res.status(500).json({ success: false, error: "API ключ не найден в настройках Vercel" });
-    }
 
     try {
         const response = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -17,27 +12,25 @@ export default async function handler(req, res) {
             messages: [
                 { 
                     role: "system", 
-                    content: "Ты — элитный финансовый консьерж Shopping Guard. Твоя роль: помочь пользователю принять осознанное решение о покупке. Стиль: вежливый, экспертный, дорогой." 
+                    content: `Ты — элитный финансовый консьерж Shopping Guard. Твоя задача: проанализировать товар по ссылке.
+                    
+                    ТАКТИКА ОТВЕТА:
+                    1. ПРИВЕТСТВИЕ: Короткое и статусное.
+                    2. СУТЬ: Исходя из текста ссылки (например, если там 'wildberries.ru/catalog/13212370'), пойми категорию товара. 
+                    3. ВОПРОСЫ НА МИЛЛИОН: Задай 3 конкретных вопроса. Например: "Эта вещь заменит вам что-то старое или просто займет место?", "Вы планируете использовать это чаще 2 раз в месяц?", "Станет ли ваша жизнь качественнее после этой покупки?".
+                    4. ВЕРДИКТ: Дай совет — купить сейчас, подождать 48 часов или отказаться.
+                    
+                    Пиши красиво, с абзацами, используй минимум эмодзи (только статусные: 💎, ⚖️, 🕰).` 
                 },
-                { role: "user", content: `Проанализируй эту покупку по ссылке: ${link}` }
+                { role: "user", content: `Ссылка на товар: ${link}` }
             ],
-            temperature: 0.7
+            temperature: 0.8
         }, {
-            headers: { 
-                'Authorization': `Bearer ${apiKey}`, 
-                'Content-Type': 'application/json' 
-            }
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
         });
 
-        const aiText = response.data.choices[0].message.content;
-        return res.status(200).json({ success: true, text: aiText });
-
+        return res.status(200).json({ success: true, text: response.data.choices[0].message.content });
     } catch (error) {
-        // Если ошибка 401, выводим понятное сообщение
-        const status = error.response ? error.response.status : 500;
-        if (status === 401) {
-            return res.status(401).json({ success: false, error: "Неверный API ключ. Проверьте OPENAI_API_KEY в Vercel." });
-        }
         return res.status(500).json({ success: false, error: error.message });
     }
 }
