@@ -9,24 +9,78 @@
         :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
         .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; }
-        h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; }
-        .input-group { background: white; padding: 10px; border-radius: 20px; box-shadow: 0 15px 35px rgba(184,134,11,0.1); margin: 30px 0; border: 1px solid rgba(184,134,11,0.2); }
-        input { width: 100%; border: none; padding: 15px; outline: none; font-size: 16px; background: transparent; }
-        .main-btn { width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
-        .result-area { margin-top: 30px; display: none; background: white; padding: 20px; border-radius: 20px; text-align: left; border-left: 4px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; margin-top: 50px; }
+        
+        /* Группа полей ввода */
+        .input-group { 
+            background: white; 
+            padding: 10px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(184,134,11,0.1); 
+            margin: 30px 0; 
+            border: 1px solid rgba(184,134,11,0.2); 
+            text-align: left;
+        }
+        
+        input { 
+            width: 100%; 
+            border: none; 
+            padding: 15px; 
+            outline: none; 
+            font-size: 15px; 
+            background: transparent; 
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        .divider {
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 5px 15px;
+        }
+
+        .main-btn { 
+            width: 100%; 
+            background: #1A1A1A; 
+            color: white; 
+            border: none; 
+            padding: 20px; 
+            border-radius: 18px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            transition: 0.3s;
+        }
+        
+        .main-btn:hover { background: #333; }
+
+        .result-area { 
+            margin-top: 30px; 
+            display: none; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 20px; 
+            text-align: left; 
+            border-left: 4px solid var(--accent); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+            line-height: 1.6; 
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <h1>Shopping Guard</h1>
-    <p style="font-size: 10px; letter-spacing: 3px; color: #888;">AI FINANCIAL CONCIERGE</p>
+    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">AI FINANCIAL CONCIERGE</p>
 
     <div class="input-group">
-    <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0;">
-    <input type="text" id="productName" placeholder="Или просто напишите, что это (например: Пятновыводитель)">
-</div>
+        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
+        
+        <div class="divider"></div>
+        
+        <input type="text" id="productName" placeholder="Что это? (например: Пятновыводитель)">
+    </div>
 
     <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
 
@@ -38,10 +92,12 @@
 <script>
     async function startAnalysis() {
         const link = document.getElementById('productLink').value;
+        const name = document.getElementById('productName').value;
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
 
-        if(!link) return alert("Пожалуйста, вставьте ссылку");
+        // Проверяем, чтобы хоть что-то было заполнено
+        if(!link && !name) return alert("Пожалуйста, вставьте ссылку или напишите название товара");
         
         resultArea.style.display = 'block';
         responseArea.innerHTML = "<b>Анализирую...</b><br>Изучаю ценность данной покупки.";
@@ -50,17 +106,21 @@
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ link: link })
+                // Отправляем и ссылку, и название вместе
+                body: JSON.stringify({ 
+                    link: "Товар: " + name + " | Ссылка: " + link 
+                })
             });
             const data = await response.json();
             
             if (data.success) {
+                // Заменяем переносы строк на тег переноса в HTML
                 responseArea.innerHTML = data.text.replace(/\n/g, '<br>');
             } else {
                 responseArea.innerHTML = "Ошибка: " + data.error;
             }
         } catch (e) {
-            responseArea.innerHTML = "Ошибка связи с сервером.";
+            responseArea.innerHTML = "Ошибка связи с сервером. Попробуйте позже.";
         }
     }
 </script>
