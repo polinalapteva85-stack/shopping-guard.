@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Guard | Premium AI</title>
+    <title>Shopping Guard | Сканер дефектов</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1A1A1A">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -20,12 +20,6 @@
         }
         input { width: 100%; border: none; padding: 12px 15px; outline: none; font-size: 15px; background: transparent; font-family: 'Inter', sans-serif; box-sizing: border-box; }
         .divider { border: 0; border-top: 1px solid #eee; margin: 5px 15px; }
-        
-        .price-row { display: flex; justify-content: space-between; }
-        .price-row input { width: 50%; }
-        .price-row .divider-v { border-left: 1px solid #eee; margin: 5px 0; }
-
-        .hint-text { font-size: 12px; color: #888; margin: -15px 0 20px 0; text-align: left; padding: 0 10px; line-height: 1.4; }
 
         .main-btn { 
             width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; 
@@ -58,25 +52,17 @@
 
 <div class="app-container">
     <h1>Shopping Guard</h1>
-    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">AI FINANCIAL CONCIERGE 2026</p>
+    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">X-RAY DEFECT SCANNER 2026</p>
 
     <div class="input-group">
-        <input type="text" id="productLink" placeholder="Ссылка на товар...">
+        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
         <div class="divider"></div>
-        <input type="text" id="productName" placeholder="Что это? (Например: Утюг Tefal)">
-        <div class="divider"></div>
-        <div class="price-row">
-            <input type="number" id="priceNow" placeholder="Цена сейчас (₽)">
-            <div class="divider-v"></div>
-            <input type="number" id="priceOld" placeholder="Зачёркнутая (₽)">
-        </div>
+        <input type="text" id="productName" placeholder="Что это за товар?">
     </div>
-    
-    <div class="hint-text">💡 Поля цен не обязательны, но с ними Детектор Лжи выдаст максимально точный финансовый разбор переплаты.</div>
 
-    <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
+    <button class="main-btn" onclick="startAnalysis()">Сканировать дефекты</button>
 
-    <div id="riskLabel" class="risk-label">Уровень импульсивного риска</div>
+    <div id="riskLabel" class="risk-label">Индекс скрытого брака</div>
     <div id="riskGauge" class="risk-gauge">
         <div id="riskFill" class="risk-fill"></div>
     </div>
@@ -85,11 +71,11 @@
         <div id="aiResponse"></div>
     </div>
 
-    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Поделиться вердиктом</button>
+    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Переслать скрытые косяки</button>
 
     <div class="footer-trust">
-        Powered by <b>Neural Data 2026</b><br>
-        Мы на стороне вашего кошелька
+        Powered by <b>X-Ray Data 2026</b><br>
+        Вскрываем правду, бережем кошелек
     </div>
 </div>
 
@@ -108,17 +94,14 @@
             const foundUrl = incomingText.match(urlRegex);
             if (foundUrl) { document.getElementById('productLink').value = foundUrl[0]; }
             
-            // Записываем прилетевший текст в поле названия, чтобы пользователю было понятно, что за товар
             let cleanName = incomingText.replace(urlRegex, '').replace(/Посмотрите на Wildberries:/g, '').trim();
             document.getElementById('productName').value = cleanName || "Товар из маркетплейса";
         }
     });
 
-async function startAnalysis() {
+    async function startAnalysis() {
         const link = document.getElementById('productLink').value;
         const name = document.getElementById('productName').value;
-        const priceNow = document.getElementById('priceNow').value.trim();
-        const priceOld = document.getElementById('priceOld').value.trim();
         
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
@@ -134,17 +117,13 @@ async function startAnalysis() {
         label.style.display = 'none';
         shareBtn.style.display = 'none';
         fill.style.width = '0%';
-        responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с базой достоверности 2026.";
+        responseArea.innerHTML = "<b>Запускаю рентген...</b><br>Сканирую массив скрытого брака.";
 
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    link: name + " (" + link + ")",
-                    priceNow: priceNow ? Number(priceNow) : null,
-                    priceOld: priceOld ? Number(priceOld) : null
-                })
+                body: JSON.stringify({ link: name + " (" + link + ")" })
             });
             const data = await response.json();
             
@@ -153,26 +132,21 @@ async function startAnalysis() {
                 currentScore = scoreMatch ? parseInt(scoreMatch[1]) : 50;
                 let cleanText = data.text.replace(/\[SCORE:\s*\d+\]/g, '');
 
-                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ:\*\* (.*)/);
+                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ РАССЛЕДОВАНИЯ:\*\* (.*)/);
                 currentObject = objMatch ? objMatch[1].replace(/<\/?[^>]+(>|$)/g, "") : "Товар";
 
                 gauge.style.display = 'block';
                 label.style.display = 'block';
                 shareBtn.style.display = 'block';
                 
-                let color = '#B8860B'; 
-                if (currentScore > 30) color = '#E67E22'; 
-                if (currentScore > 70) color = '#C0392B'; 
+                let color = '#2ECC71'; // Низкий брак
+                if (currentScore > 30) color = '#E67E22'; // Средний
+                if (currentScore > 70) color = '#C0392B'; // Хлам
                 
                 document.documentElement.style.setProperty('--risk-color', color);
                 setTimeout(() => { fill.style.width = currentScore + '%'; }, 100);
 
-                // Превращаем маркдаун заголовки в красивый жирный текст с отступами
-                let htmlContent = cleanText
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                    .replace(/\n/g, '<br>');
-                
-                responseArea.innerHTML = htmlContent;
+                responseArea.innerHTML = cleanText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             } else {
                 responseArea.innerHTML = "Ошибка: " + data.error;
             }
@@ -180,15 +154,16 @@ async function startAnalysis() {
             responseArea.innerHTML = "Ошибка связи с сервером.";
         }
     }
+
     function shareVerdict() {
         let statusEmoji = "✅";
         if (currentScore > 30) statusEmoji = "⚠️";
         if (currentScore > 70) statusEmoji = "❌";
 
-        const shareText = `Shopping Guard 2026 проверил товар:\n🕵️‍♂️ ${currentObject}\n${statusEmoji} Уровень импульсивного риска: ${currentScore}%\n\nПроверить свою корзину можно здесь:`;
+        const shareText = `⚠️ Shopping Guard вскрыл скрытые дефекты товара:\n🔎 ${currentObject}\n🛑 Индекс брака: ${currentScore}%\n\nПосмотри, что от тебя скрывает продавец:`;
         
         if (navigator.share) {
-            navigator.share({ title: 'Вердикт Shopping Guard', text: shareText, url: window.location.origin }).catch(console.error);
+            navigator.share({ title: 'Сканер дефектов', text: shareText, url: window.location.origin }).catch(console.error);
         } else {
             navigator.clipboard.writeText(`${shareText} ${window.location.origin}`);
             alert("Скопировано в буфер обмена!");
