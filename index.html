@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Guard | Экспертиза рисков</title>
+    <title>Shopping Guard</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1A1A1A">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -16,10 +16,8 @@
         .input-group { 
             background: white; padding: 10px; border-radius: 20px; 
             box-shadow: 0 15px 35px rgba(184,134,11,0.1); margin: 25px 0; border: 1px solid rgba(184,134,11,0.2); 
-            text-align: left;
         }
-        input { width: 100%; border: none; padding: 12px 15px; outline: none; font-size: 15px; background: transparent; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-        .divider { border: 0; border-top: 1px solid #eee; margin: 5px 15px; }
+        input { width: 100%; border: none; padding: 15px; outline: none; font-size: 16px; background: transparent; font-family: 'Inter', sans-serif; box-sizing: border-box; text-align: center; }
 
         .main-btn { 
             width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; 
@@ -52,17 +50,15 @@
 
 <div class="app-container">
     <h1>Shopping Guard</h1>
-    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">MARKETPLACE RISK EXPERTISE 2026</p>
+    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">YOUR PERSONAL AI CRITIC 2026</p>
 
     <div class="input-group">
-        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
-        <div class="divider"></div>
-        <input type="text" id="productName" placeholder="Название товара">
+        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар или название...">
     </div>
 
-    <button class="main-btn" onclick="startAnalysis()">Проверить риски товара</button>
+    <button class="main-btn" onclick="startAnalysis()">Проверить товар</button>
 
-    <div id="riskLabel" class="risk-label">Индекс потребительского риска</div>
+    <div id="riskLabel" class="risk-label">Уровень импульсивного риска</div>
     <div id="riskGauge" class="risk-gauge">
         <div id="riskFill" class="risk-fill"></div>
     </div>
@@ -71,11 +67,11 @@
         <div id="aiResponse"></div>
     </div>
 
-    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Переслать карту рисков</button>
+    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Поделиться вердиктом</button>
 
     <div class="footer-trust">
-        Powered by <b>Expert Intelligence 2026</b><br>
-        Знаем слабые места каждого товара
+        Powered by <b>Neural Data 2026</b><br>
+        Мы на стороне вашего кошелька
     </div>
 </div>
 
@@ -90,18 +86,13 @@
         const incomingText = parsedUrl.searchParams.get('text') || parsedUrl.searchParams.get('url') || "";
         
         if (incomingText) {
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const foundUrl = incomingText.match(urlRegex);
-            if (foundUrl) { document.getElementById('productLink').value = foundUrl[0]; }
-            
-            let cleanName = incomingText.replace(urlRegex, '').replace(/Посмотрите на Wildberries:/g, '').trim();
-            document.getElementById('productName').value = cleanName || "Товар из маркетплейса";
+            // Если прилетела ссылка с текстом из маркетплейса, вставляем её целиком
+            document.getElementById('productLink').value = incomingText;
         }
     });
 
     async function startAnalysis() {
         const link = document.getElementById('productLink').value;
-        const name = document.getElementById('productName').value;
         
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
@@ -110,29 +101,31 @@
         const label = document.getElementById('riskLabel');
         const shareBtn = document.getElementById('shareBtn');
 
-        if(!link && !name) return alert("Пожалуйста, введите данные");
+        if(!link) return alert("Пожалуйста, вставьте ссылку на товар");
         
         resultArea.style.display = 'block';
         gauge.style.display = 'none';
         label.style.display = 'none';
         shareBtn.style.display = 'none';
         fill.style.width = '0%';
-        responseArea.innerHTML = "<b>Провожу независимую экспертизу...</b><br>Поднимаю карты заводских дефектов.";
+        responseArea.innerHTML = "<b>Анализирую товар...</b><br>Включаю здравый смысл.";
 
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ link: name + " (" + link + ")" })
+                body: JSON.stringify({ link: link })
             });
             const data = await response.json();
             
             if (data.success) {
+                // Вытаскиваем оценку риска из ответа ИИ
                 const scoreMatch = data.text.match(/\[SCORE:\s*(\d+)\]/);
                 currentScore = scoreMatch ? parseInt(scoreMatch[1]) : 50;
                 let cleanText = data.text.replace(/\[SCORE:\s*\d+\]/g, '');
 
-                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ АНАЛИЗА:\*\* (.*)/);
+                // Вытаскиваем название объекта для кнопки "поделиться"
+                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ:\*\* (.*)/);
                 currentObject = objMatch ? objMatch[1].replace(/<\/?[^>]+(>|$)/g, "") : "Товар";
 
                 gauge.style.display = 'block';
@@ -146,6 +139,7 @@
                 document.documentElement.style.setProperty('--risk-color', color);
                 setTimeout(() => { fill.style.width = currentScore + '%'; }, 100);
 
+                // Красиво форматируем заголовки
                 responseArea.innerHTML = cleanText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             } else {
                 responseArea.innerHTML = "Ошибка: " + data.error;
@@ -160,10 +154,10 @@
         if (currentScore > 30) statusEmoji = "⚠️";
         if (currentScore > 70) statusEmoji = "❌";
 
-        const shareText = `🔍 Shopping Guard проверил скрытые риски товара:\n📦 ${currentObject}\n🛑 Уровень риска: ${currentScore}%\n\nПосмотри технический рентген перед покупкой:`;
+        const shareText = `🕵️‍♂️ Shopping Guard проверил товар:\n📦 ${currentObject}\n${statusEmoji} Индекс риска: ${currentScore}%\n\nПроверь свою корзину перед покупкой:`;
         
         if (navigator.share) {
-            navigator.share({ title: 'Экспертиза рисков', text: shareText, url: window.location.origin }).catch(console.error);
+            navigator.share({ title: 'Вердикт Shopping Guard', text: shareText, url: window.location.origin }).catch(console.error);
         } else {
             navigator.clipboard.writeText(`${shareText} ${window.location.origin}`);
             alert("Скопировано в буфер обмена!");
