@@ -25,6 +25,8 @@
         .price-row input { width: 50%; }
         .price-row .divider-v { border-left: 1px solid #eee; margin: 5px 0; }
 
+        .hint-text { font-size: 12px; color: #888; margin: -15px 0 20px 0; text-align: left; padding: 0 10px; line-height: 1.4; }
+
         .main-btn { 
             width: 100%; background: #1A1A1A; color: white; border: none; padding: 20px; border-radius: 18px; 
             font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
@@ -61,14 +63,16 @@
     <div class="input-group">
         <input type="text" id="productLink" placeholder="Ссылка на товар...">
         <div class="divider"></div>
-        <input type="text" id="productName" placeholder="Название товара">
+        <input type="text" id="productName" placeholder="Что это? (Например: Утюг Tefal)">
         <div class="divider"></div>
         <div class="price-row">
-            <input type="text" id="priceNow" placeholder="Цена сейчас (₽)">
+            <input type="number" id="priceNow" placeholder="Цена сейчас (₽)">
             <div class="divider-v"></div>
-            <input type="text" id="priceOld" placeholder="Зачёркнутая (₽)">
+            <input type="number" id="priceOld" placeholder="Зачёркнутая (₽)">
         </div>
     </div>
+    
+    <div class="hint-text">💡 Поля цен не обязательны, но с ними Детектор Лжи выдаст максимально точный финансовый разбор переплаты.</div>
 
     <button class="main-btn" onclick="startAnalysis()">Проверить целесообразность</button>
 
@@ -95,35 +99,18 @@
     let currentScore = 0;
     let currentObject = "";
 
-    // АВТО-ПАРСЕР ДЛЯ КНОПКИ "ПОДЕЛИТЬСЯ" ИЗ WILDBERRIES / OZON
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
-        // Получаем весь текст, который прилетел из маркетплейса
         const incomingText = parsedUrl.searchParams.get('text') || parsedUrl.searchParams.get('url') || "";
         
         if (incomingText) {
-            // 1. Ищем ссылку на маркетплейс в тексте
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             const foundUrl = incomingText.match(urlRegex);
             if (foundUrl) { document.getElementById('productLink').value = foundUrl[0]; }
-
-            // 2. Ищем цену (например: "2 056 ₽", "2056 руб" или просто цифры)
-            // Ищем паттерны цен в прилетевшем тексте маркетплейса
-            const cleanIncoming = incomingText.replace(/\s/g, ''); // убираем пробелы в цифрах типа 7 328
             
-            // Пробуем вытащить текущую и старую цену, если маркетплейс их отдал в тексте шеринга
-            const prices = cleanIncoming.match(/\d+/g);
-            if (prices && prices.length >= 2) {
-                // Если маркетплейсы отдают данные в формате Название + Цена + Старая цена
-                // Нам нужно отделить их. Но чтобы не гадать, мы передадим весь исходный текст шеринга в ИИ!
-            }
-            
-            // Самое надежное решение: записываем весь прилетевший текст в поле Название, 
-            // чтобы ИИ сам внутри себя его разобрал, так как он понимает русский язык идеально!
-            document.getElementById('productName').value = incomingText.replace(urlRegex, '').trim();
-            
-            // Сразу запускаем анализ, чтобы всё произошло в один клик!
-            startAnalysis();
+            // Записываем прилетевший текст в поле названия, чтобы пользователю было понятно, что за товар
+            let cleanName = incomingText.replace(urlRegex, '').replace(/Посмотрите на Wildberries:/g, '').trim();
+            document.getElementById('productName').value = cleanName || "Товар из маркетплейса";
         }
     });
 
@@ -154,7 +141,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    link: "Контекст из маркетплейса: " + name + " | Ссылка: " + link,
+                    link: "Товар: " + name + " | Ссылка: " + link,
                     priceNow: priceNow,
                     priceOld: priceOld
                 })
