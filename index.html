@@ -114,7 +114,7 @@
         }
     });
 
- async function startAnalysis() {
+async function startAnalysis() {
         const link = document.getElementById('productLink').value;
         const name = document.getElementById('productName').value;
         const priceNow = document.getElementById('priceNow').value.trim();
@@ -167,7 +167,12 @@
                 document.documentElement.style.setProperty('--risk-color', color);
                 setTimeout(() => { fill.style.width = currentScore + '%'; }, 100);
 
-                responseArea.innerHTML = cleanText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+                // Превращаем маркдаун заголовки в красивый жирный текст с отступами
+                let htmlContent = cleanText
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                    .replace(/\n/g, '<br>');
+                
+                responseArea.innerHTML = htmlContent;
             } else {
                 responseArea.innerHTML = "Ошибка: " + data.error;
             }
@@ -175,7 +180,6 @@
             responseArea.innerHTML = "Ошибка связи с сервером.";
         }
     }
-
     function shareVerdict() {
         let statusEmoji = "✅";
         if (currentScore > 30) statusEmoji = "⚠️";
