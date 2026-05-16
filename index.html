@@ -114,11 +114,11 @@
         }
     });
 
-    async function startAnalysis() {
+ async function startAnalysis() {
         const link = document.getElementById('productLink').value;
         const name = document.getElementById('productName').value;
-        const priceNow = document.getElementById('priceNow').value;
-        const priceOld = document.getElementById('priceOld').value;
+        const priceNow = document.getElementById('priceNow').value.trim();
+        const priceOld = document.getElementById('priceOld').value.trim();
         
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
@@ -141,9 +141,9 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    link: "Товар: " + name + " | Ссылка: " + link,
-                    priceNow: priceNow,
-                    priceOld: priceOld
+                    link: name + " (" + link + ")",
+                    priceNow: priceNow ? Number(priceNow) : null,
+                    priceOld: priceOld ? Number(priceOld) : null
                 })
             });
             const data = await response.json();
