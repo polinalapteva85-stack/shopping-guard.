@@ -10,7 +10,7 @@
     <style>
         :root { --bg: #F9F7F2; --accent: #B8860B; --text: #1A1A1A; --risk-color: #B8860B; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
-        .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; display: flex; flex-direction: column; }
+        .app-container { width: 100%; max-width: 450px; padding: 40px 25px; text-align: center; display: flex; flex-direction: column; box-sizing: border-box; }
         h1 { font-family: 'Playfair Display', serif; text-transform: uppercase; letter-spacing: 2px; margin-top: 50px; }
         
         .input-group { 
@@ -45,14 +45,16 @@
         #aiResponse { font-size: 15px; color: #333; }
         #aiResponse b { color: var(--accent); font-family: 'Playfair Display', serif; display: block; margin-top: 15px; font-size: 17px; }
 
-        /* НАШ КОЗЫРЬ - Надпись в футере */
+        /* Стильная кнопка Поделиться */
+        .share-btn {
+            display: none; width: 100%; background: transparent; color: #1A1A1A; border: 2px solid #1A1A1A; 
+            padding: 15px; border-radius: 18px; font-weight: 600; cursor: pointer; text-transform: uppercase; 
+            letter-spacing: 1px; margin-top: 15px; transition: 0.3s; font-size: 13px;
+        }
+        .share-btn:hover { background: #1A1A1A; color: white; }
+
         .footer-trust {
-            margin-top: auto;
-            padding: 40px 0 20px 0;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: #A0A0A0;
-            text-transform: uppercase;
+            margin-top: auto; padding: 40px 0 20px 0; font-size: 11px; letter-spacing: 1px; color: #A0A0A0; text-transform: uppercase;
         }
         .footer-trust b { color: var(--accent); font-weight: 600; }
     </style>
@@ -80,6 +82,8 @@
         <div id="aiResponse"></div>
     </div>
 
+    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Поделиться вердиктом</button>
+
     <div class="footer-trust">
         Powered by <b>Neural Data 2026</b><br>
         Мы на стороне вашего кошелька
@@ -88,6 +92,10 @@
 
 <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
+
+    // Переменные для хранения текущего отчета
+    let currentScore = 0;
+    let currentObject = "";
 
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
@@ -103,12 +111,14 @@
         const gauge = document.getElementById('riskGauge');
         const fill = document.getElementById('riskFill');
         const label = document.getElementById('riskLabel');
+        const shareBtn = document.getElementById('shareBtn');
 
         if(!link && !name) return alert("Пожалуйста, введите данные");
         
         resultArea.style.display = 'block';
         gauge.style.display = 'none';
         label.style.display = 'none';
+        shareBtn.style.display = 'none';
         fill.style.width = '0%';
         responseArea.innerHTML = "<b>Анализирую...</b><br>Сверяю с базой достоверности 2026.";
 
@@ -122,18 +132,23 @@
             
             if (data.success) {
                 const scoreMatch = data.text.match(/\[SCORE:\s*(\d+)\]/);
-                const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+                currentScore = scoreMatch ? parseInt(scoreMatch[1]) : 50;
                 const cleanText = data.text.replace(/\[SCORE:\s*\d+\]/g, '');
+
+                // Вытаскиваем название объекта для красивого шеринга
+                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ:\*\* (.*)/);
+                currentObject = objMatch ? objMatch[1].replace(/<\/?[^>]+(>|$)/g, "") : (name || "Товар");
 
                 gauge.style.display = 'block';
                 label.style.display = 'block';
+                shareBtn.style.display = 'block'; // Показываем кнопку после анализа
                 
                 let color = '#B8860B'; 
-                if (score > 30) color = '#E67E22'; 
-                if (score > 70) color = '#C0392B'; 
+                if (currentScore > 30) color = '#E67E22'; 
+                if (currentScore > 70) color = '#C0392B'; 
                 
                 document.documentElement.style.setProperty('--risk-color', color);
-                setTimeout(() => { fill.style.width = score + '%'; }, 100);
+                setTimeout(() => { fill.style.width = currentScore + '%'; }, 100);
 
                 responseArea.innerHTML = cleanText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             } else {
@@ -141,6 +156,27 @@
             }
         } catch (e) {
             responseArea.innerHTML = "Ошибка связи с сервером.";
+        }
+    }
+
+    // Функция отправки вердикта
+    function shareVerdict() {
+        let statusEmoji = "✅";
+        if (currentScore > 30) statusEmoji = "⚠️";
+        if (currentScore > 70) statusEmoji = "❌";
+
+        const shareText = `Shopping Guard 2026 проверил товар:\n🕵️‍♂️ ${currentObject}\n${statusEmoji} Уровень импульсивного риска: ${currentScore}%\n\nПроверь свои покупки перед оплатой здесь:`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'Вердикт Shopping Guard',
+                text: shareText,
+                url: window.location.origin
+            }).catch(console.error);
+        } else {
+            // Если браузер не поддерживает (например, старый ПК), просто копируем в буфер
+            navigator.clipboard.writeText(`${shareText} ${window.location.origin}`);
+            alert("Текст вердикта и ссылка скопированы в буфер обмена! Отправь его друзьям.");
         }
     }
 </script>
