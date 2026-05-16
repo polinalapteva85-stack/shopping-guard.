@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Guard | Сканер дефектов</title>
+    <title>Shopping Guard | Экспертиза рисков</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1A1A1A">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -52,17 +52,17 @@
 
 <div class="app-container">
     <h1>Shopping Guard</h1>
-    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">X-RAY DEFECT SCANNER 2026</p>
+    <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">MARKETPLACE RISK EXPERTISE 2026</p>
 
     <div class="input-group">
         <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
         <div class="divider"></div>
-        <input type="text" id="productName" placeholder="Что это за товар?">
+        <input type="text" id="productName" placeholder="Название товара">
     </div>
 
-    <button class="main-btn" onclick="startAnalysis()">Сканировать дефекты</button>
+    <button class="main-btn" onclick="startAnalysis()">Проверить риски товара</button>
 
-    <div id="riskLabel" class="risk-label">Индекс скрытого брака</div>
+    <div id="riskLabel" class="risk-label">Индекс потребительского риска</div>
     <div id="riskGauge" class="risk-gauge">
         <div id="riskFill" class="risk-fill"></div>
     </div>
@@ -71,11 +71,11 @@
         <div id="aiResponse"></div>
     </div>
 
-    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Переслать скрытые косяки</button>
+    <button id="shareBtn" class="share-btn" onclick="shareVerdict()">🔗 Переслать карту рисков</button>
 
     <div class="footer-trust">
-        Powered by <b>X-Ray Data 2026</b><br>
-        Вскрываем правду, бережем кошелек
+        Powered by <b>Expert Intelligence 2026</b><br>
+        Знаем слабые места каждого товара
     </div>
 </div>
 
@@ -117,7 +117,7 @@
         label.style.display = 'none';
         shareBtn.style.display = 'none';
         fill.style.width = '0%';
-        responseArea.innerHTML = "<b>Запускаю рентген...</b><br>Сканирую массив скрытого брака.";
+        responseArea.innerHTML = "<b>Провожу независимую экспертизу...</b><br>Поднимаю карты заводских дефектов.";
 
         try {
             const response = await fetch('/api/analyze', {
@@ -132,16 +132,16 @@
                 currentScore = scoreMatch ? parseInt(scoreMatch[1]) : 50;
                 let cleanText = data.text.replace(/\[SCORE:\s*\d+\]/g, '');
 
-                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ РАССЛЕДОВАНИЯ:\*\* (.*)/);
+                const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ АНАЛИЗА:\*\* (.*)/);
                 currentObject = objMatch ? objMatch[1].replace(/<\/?[^>]+(>|$)/g, "") : "Товар";
 
                 gauge.style.display = 'block';
                 label.style.display = 'block';
                 shareBtn.style.display = 'block';
                 
-                let color = '#2ECC71'; // Низкий брак
-                if (currentScore > 30) color = '#E67E22'; // Средний
-                if (currentScore > 70) color = '#C0392B'; // Хлам
+                let color = '#2ECC71'; 
+                if (currentScore > 30) color = '#E67E22'; 
+                if (currentScore > 70) color = '#C0392B'; 
                 
                 document.documentElement.style.setProperty('--risk-color', color);
                 setTimeout(() => { fill.style.width = currentScore + '%'; }, 100);
@@ -160,10 +160,10 @@
         if (currentScore > 30) statusEmoji = "⚠️";
         if (currentScore > 70) statusEmoji = "❌";
 
-        const shareText = `⚠️ Shopping Guard вскрыл скрытые дефекты товара:\n🔎 ${currentObject}\n🛑 Индекс брака: ${currentScore}%\n\nПосмотри, что от тебя скрывает продавец:`;
+        const shareText = `🔍 Shopping Guard проверил скрытые риски товара:\n📦 ${currentObject}\n🛑 Уровень риска: ${currentScore}%\n\nПосмотри технический рентген перед покупкой:`;
         
         if (navigator.share) {
-            navigator.share({ title: 'Сканер дефектов', text: shareText, url: window.location.origin }).catch(console.error);
+            navigator.share({ title: 'Экспертиза рисков', text: shareText, url: window.location.origin }).catch(console.error);
         } else {
             navigator.clipboard.writeText(`${shareText} ${window.location.origin}`);
             alert("Скопировано в буфер обмена!");
