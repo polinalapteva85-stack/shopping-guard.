@@ -1,0 +1,32 @@
+openapi: 3.0.0
+info:
+  title: Shopping Guard
+  version: 1.0.0
+paths:
+  /:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: shopping-guard-app-b1g66e
+        object: index.html
+        service_account_id: ajenn411nktdhikhmj2l
+  /{file}:
+    get:
+      parameters:
+        - name: file
+          in: path
+          required: true
+          schema:
+            type: string
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: shopping-guard-app-b1g66e
+        object: '{file}'
+        error_object: index.html
+        service_account_id: ajenn411nktdhikhmj2l
+  /api/analyze:
+    post:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4ef8d5atbgqr1ik4ln8
+        service_account_id: ajenn411nktdhikhmj2l

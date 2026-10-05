@@ -54,8 +54,10 @@
 
     <div class="input-group">
         <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
-        <input type="text" id="productName" placeholder="Что это за товар и сколько стоит?" style="border-top: 1px solid rgba(184,134,11,0.15);">
+        <input type="text" id="productPrice" inputmode="numeric" placeholder="Цена, ₽" style="border-top: 1px solid rgba(184,134,11,0.15);">
+        <input type="text" id="productName" placeholder="Что это за товар?" style="border-top: 1px solid rgba(184,134,11,0.15); display: none;">
     </div>
+    <p id="nameToggle" onclick="showNameField()" style="font-size: 12px; color: #888; margin: -12px 0 20px; cursor: pointer; text-decoration: underline;">Нет ссылки? Напишите, что за товар</p>
 
     <button class="main-btn" onclick="startAnalysis()">Проверить товар</button>
 
@@ -93,19 +95,30 @@
     let currentScore = 0;
     let currentObject = "";
 
+    function showNameField() {
+        document.getElementById('productName').style.display = 'block';
+        document.getElementById('nameToggle').style.display = 'none';
+        document.getElementById('productName').focus();
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
-        const incomingText = parsedUrl.searchParams.get('text') || parsedUrl.searchParams.get('url') || "";
-        
+        // Из «Поделиться» маркетплейса приходят название, текст и ссылка — собираем всё вместе
+        const incomingText = ['title', 'text', 'url']
+            .map((key) => parsedUrl.searchParams.get(key) || "")
+            .filter((value, i, all) => value && all.indexOf(value) === i)
+            .join(' ');
+
         if (incomingText) {
-            // Если прилетела ссылка с текстом из маркетплейса, вставляем её целиком
             document.getElementById('productLink').value = incomingText;
+            document.getElementById('productPrice').focus();
         }
     });
 
     async function startAnalysis() {
         const link = document.getElementById('productLink').value.trim();
         const name = document.getElementById('productName').value.trim();
+        const price = document.getElementById('productPrice').value.replace(/[^\d]/g, '');
 
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
@@ -131,7 +144,7 @@
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ link: link, name: name }),
+                body: JSON.stringify({ link: link, name: name, price: price }),
                 signal: controller.signal
             });
 
@@ -150,7 +163,8 @@
 
                 // Вытаскиваем название объекта для кнопки "поделиться"
                 const objMatch = cleanText.match(/🔍 \*\*ОБЪЕКТ:\*\* (.*)/);
-                currentObject = objMatch ? objMatch[1].replace(/<\/?[^>]+(>|$)/g, "") : "Товар";
+                currentObject = data.product ? data.product.title
+                    : objMatch ? objMatch[1].replace(/<\/?[^>]+(>|$)/g, "") : "Товар";
 
                 gauge.style.display = 'block';
                 label.style.display = 'block';
@@ -165,11 +179,15 @@
 
                 // Красиво форматируем заголовки
                 responseArea.innerHTML = escapeHtml(cleanText).replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+            } else if (data.needName) {
+                // Товар по ссылке не узнали (например, Ozon) — просим написать, что это
+                showNameField();
+                responseArea.innerHTML = "<b>Не узнали товар по ссылке</b>Напишите в строке выше, что это за товар, и нажмите «Проверить» ещё раз.";
             } else {
                 responseArea.innerHTML = "<b>Не получилось</b>" + escapeHtml(data.error || "неизвестная ошибка");
             }
         } catch (e) {
-            let reason = "Не удалось связаться с сервером. Проверьте интернет или попробуйте с VPN / без VPN.";
+            let reason = "Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.";
             if (e.name === 'AbortError') reason = "Сервер не ответил за минуту. Попробуйте ещё раз чуть позже.";
             else if (!navigator.onLine) reason = "Нет интернета.";
             responseArea.innerHTML = "<b>Нет связи</b>" + reason;
