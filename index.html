@@ -53,7 +53,8 @@
     <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">YOUR PERSONAL AI CRITIC 2026</p>
 
     <div class="input-group">
-        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар или название...">
+        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
+        <input type="text" id="productName" placeholder="Что это за товар и сколько стоит?" style="border-top: 1px solid rgba(184,134,11,0.15);">
     </div>
 
     <button class="main-btn" onclick="startAnalysis()">Проверить товар</button>
@@ -76,7 +77,18 @@
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+        // Пришла новая версия приложения — один раз перезагружаемся, чтобы её показать
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!reloaded) { reloaded = true; window.location.reload(); }
+        });
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
     let currentScore = 0;
     let currentObject = "";
@@ -92,8 +104,9 @@
     });
 
     async function startAnalysis() {
-        const link = document.getElementById('productLink').value;
-        
+        const link = document.getElementById('productLink').value.trim();
+        const name = document.getElementById('productName').value.trim();
+
         const responseArea = document.getElementById('aiResponse');
         const resultArea = document.getElementById('resultArea');
         const gauge = document.getElementById('riskGauge');
@@ -101,7 +114,7 @@
         const label = document.getElementById('riskLabel');
         const shareBtn = document.getElementById('shareBtn');
 
-        if(!link) return alert("Пожалуйста, вставьте ссылку на товар");
+        if (!link && !name) return alert("Вставьте ссылку на товар или напишите, что это");
         
         resultArea.style.display = 'block';
         gauge.style.display = 'none';
@@ -110,14 +123,25 @@
         fill.style.width = '0%';
         responseArea.innerHTML = "<b>Анализирую товар...</b><br>Включаю здравый смысл.";
 
+        // Ждём не дольше минуты, потом честно говорим, что сервер не ответил
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 60000);
+
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ link: link })
+                body: JSON.stringify({ link: link, name: name }),
+                signal: controller.signal
             });
-            const data = await response.json();
-            
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = { success: false, error: "сервер вернул непонятный ответ (код " + response.status + ")" };
+            }
+
             if (data.success) {
                 // Вытаскиваем оценку риска из ответа ИИ
                 const scoreMatch = data.text.match(/\[SCORE:\s*(\d+)\]/);
@@ -140,12 +164,17 @@
                 setTimeout(() => { fill.style.width = currentScore + '%'; }, 100);
 
                 // Красиво форматируем заголовки
-                responseArea.innerHTML = cleanText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+                responseArea.innerHTML = escapeHtml(cleanText).replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             } else {
-                responseArea.innerHTML = "Ошибка: " + data.error;
+                responseArea.innerHTML = "<b>Не получилось</b>" + escapeHtml(data.error || "неизвестная ошибка");
             }
         } catch (e) {
-            responseArea.innerHTML = "Ошибка связи с сервером.";
+            let reason = "Не удалось связаться с сервером. Проверьте интернет или попробуйте с VPN / без VPN.";
+            if (e.name === 'AbortError') reason = "Сервер не ответил за минуту. Попробуйте ещё раз чуть позже.";
+            else if (!navigator.onLine) reason = "Нет интернета.";
+            responseArea.innerHTML = "<b>Нет связи</b>" + reason;
+        } finally {
+            clearTimeout(timer);
         }
     }
 
