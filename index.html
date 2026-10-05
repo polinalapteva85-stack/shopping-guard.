@@ -53,7 +53,7 @@
     <p style="font-size: 10px; letter-spacing: 3px; color: #888; margin-top: -10px;">YOUR PERSONAL AI CRITIC 2026</p>
 
     <div class="input-group">
-        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар...">
+        <input type="text" id="productLink" placeholder="Вставьте ссылку на товар..." oninput="updateNameField()">
         <input type="text" id="productPrice" inputmode="numeric" placeholder="Цена, ₽" style="border-top: 1px solid rgba(184,134,11,0.15);">
         <input type="text" id="productName" placeholder="Что это за товар?" style="border-top: 1px solid rgba(184,134,11,0.15); display: none;">
     </div>
@@ -101,6 +101,19 @@
         document.getElementById('productName').focus();
     }
 
+    // Товары Wildberries узнаём по ссылке сами; для других магазинов сразу просим написать, что это
+    function updateNameField() {
+        const value = document.getElementById('productLink').value;
+        const hasUrl = /https?:\/\/|www\./i.test(value);
+        const isWb = /wildberries|wb\.ru|wb\.click/i.test(value);
+        const nameField = document.getElementById('productName');
+        if (hasUrl && !isWb) {
+            nameField.style.display = 'block';
+            nameField.placeholder = 'Что это за товар? (этот магазин не отдаёт название)';
+            document.getElementById('nameToggle').style.display = 'none';
+        }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
         // Из «Поделиться» маркетплейса приходят название, текст и ссылка — собираем всё вместе
@@ -111,6 +124,7 @@
 
         if (incomingText) {
             document.getElementById('productLink').value = incomingText;
+            updateNameField();
             document.getElementById('productPrice').focus();
         }
     });

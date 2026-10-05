@@ -41,14 +41,21 @@ async function fetchWithTimeout(url, options = {}, ms = 5000) {
     }
 }
 
+// Номер товара в ссылке WB бывает в разных местах: /catalog/123/, ?card=123, ?nm=123
+function wbArticleFromUrl(url) {
+    if (!/wildberries|wb\.ru|wbstatic|wb\.click/i.test(url)) return null;
+    const m = url.match(/\/catalog\/(\d{5,12})/i) || url.match(/[?&](?:card|nm|nm_id)=(\d{5,12})/i)
+        || url.match(/\/(\d{6,12})(?:\/|\?|$)/);
+    return m ? m[1] : null;
+}
+
 // Номер товара Wildberries из ссылки; короткие ссылки сначала раскрываем
 async function findWbArticle(url) {
-    const direct = url.match(/(?:wildberries\.ru|wb\.ru)\/catalog\/(\d+)/i);
-    if (direct) return direct[1];
+    const direct = wbArticleFromUrl(url);
+    if (direct) return direct;
     try {
         const res = await fetchWithTimeout(url, { redirect: 'follow' }, 4000);
-        const m = res.url.match(/(?:wildberries\.ru|wb\.ru)\/catalog\/(\d+)/i);
-        return m ? m[1] : null;
+        return wbArticleFromUrl(res.url);
     } catch (_) {
         return null;
     }
@@ -59,7 +66,7 @@ async function fetchWbCard(article) {
     const nm = Number(article);
     const vol = Math.floor(nm / 100000);
     const part = Math.floor(nm / 1000);
-    const hosts = Array.from({ length: 40 }, (_, i) => String(i + 1).padStart(2, '0'));
+    const hosts = Array.from({ length: 60 },(_, i) => String(i + 1).padStart(2, '0'));
     try {
         return await Promise.any(hosts.map(async (h) => {
             const res = await fetchWithTimeout(
@@ -123,13 +130,16 @@ module.exports.handler = async function (event, context) {
     const sharedText = input.replace(url, '').trim();
 
     let product = null;
+    let article = null;
     if (url) {
-        const article = await findWbArticle(url);
+        article = await findWbArticle(url);
         if (article) {
             const card = await fetchWbCard(article);
             if (card?.imt_name) product = { title: card.imt_name, brand: card.selling?.brand_name || '', details: describeWbCard(card) };
         }
     }
+    // В журнал — только ссылка и итог распознавания, чтобы разбирать сбои
+    console.log(JSON.stringify({ url, article, recognized: Boolean(product) }));
 
     if (!product && !name && !sharedText) {
         return reply(200, { success: false, needName: true, error: 'Не удалось узнать товар по ссылке. Напишите, что это за товар.' });
